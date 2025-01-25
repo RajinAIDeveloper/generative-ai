@@ -1,38 +1,26 @@
 import { NextResponse } from "next/server";
 
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+export const runtime = 'edge';
 
-async function query(data, retries = 3) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await fetch(
-        "https://api-inference.huggingface.co/models/Snowflake/snowflake-arctic-embed-l-v2.0",
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          method: "POST",
-          body: JSON.stringify(data),
+async function query(data) {
+  const response = await fetch(
+    "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2",
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+      body: JSON.stringify({
+        inputs: {
+          source_sentence: data.inputs.source_sentence,
+          sentences: data.inputs.sentences
         }
-      );
-      
-      const result = await response.json();
-      
-      if (result.error?.includes("loading")) {
-        console.log("Model loading, retrying...");
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        continue;
-      }
-      
-      return result;
-    } catch (error) {
-      if (i === retries - 1) throw error;
-      console.log(`Attempt ${i + 1} failed, retrying...`);
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      }),
     }
-  }
-  throw new Error("Model failed to load after retries");
+  );
+  
+  return response.json();
 }
 
 export async function POST(req) {
@@ -53,14 +41,10 @@ export async function POST(req) {
       }
     };
 
-    console.log("Sending request:", data);
     const result = await query(data);
-    console.log("Received response:", result);
-    
     return NextResponse.json(result);
     
   } catch (error) {
-    console.error("Similarity error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to process sentences" },
       { status: 500 }

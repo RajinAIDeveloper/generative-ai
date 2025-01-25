@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const runtime = 'edge';
+
 async function query(imageData) {
   const response = await fetch(
     "https://api-inference.huggingface.co/models/facebook/detr-resnet-50",

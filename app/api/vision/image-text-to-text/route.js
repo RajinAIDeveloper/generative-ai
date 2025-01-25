@@ -1,6 +1,8 @@
 import { HfInference } from "@huggingface/inference";
 import { NextResponse } from "next/server";
 
+export const runtime = 'edge';
+
 const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
 export async function POST(req) {
