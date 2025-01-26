@@ -192,10 +192,11 @@ export const categories = {
     ],
     'Natural Language Processing': [
       {
-        title: "Text Classification",
-        description: "Categorize text into predefined classes",
+        title: "Sentiment Analysis",
+        description: "Analyze text sentiment and emotion",
         category: "nlp"
       },
+      
       {
         title: "Token Classification",
         description: "Label individual tokens in text sequences",

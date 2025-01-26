@@ -56,9 +56,9 @@ const ModelsPage = () => {
         />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 py-12">
+      <div className="relative max-w-7xl mx-auto px-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8 mb-12">
-          <div className="flex items-center gap-6 pt-20">
+          <div className="flex items-center gap-6">
             {CategoryIcon && (
               <motion.div 
                 className={`w-16 h-16 ${categoryColor} rounded-2xl flex items-center justify-center

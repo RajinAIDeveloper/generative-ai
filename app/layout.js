@@ -27,7 +27,9 @@ export default function RootLayout({ children }) {
         <section className="min-h-screen relative text-white">
           <BackgroundAnimation/>
           <NavigationHeader />
-          {children}
+          <div className="pt-20 py-12">
+            {children}
+          </div>
         </section>
       </body>
     </html>
