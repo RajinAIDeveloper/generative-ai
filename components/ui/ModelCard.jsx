@@ -30,7 +30,8 @@ const ModelCard = ({ title, description, index, categoryColor }) => {
       'Translation': '/inference/nlp/translation',
       'Text Generation': '/inference/nlp/text-generation',
       'Table Question Answering': '/inference/nlp/qa',
-
+      'Text-to-Audio': '/inference/audio/text-to-audio',
+      'Audio Classification': '/inference/audio/classification',
       // 'Text-to-Speech': '/inference/audio/text-to-speech',
       // 'Speech-to-Text': '/inference/audio/speech-to-text',
       // 'Image Generation': '/inference/vision/image-generation',

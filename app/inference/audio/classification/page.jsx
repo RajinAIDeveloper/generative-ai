@@ -1,17 +1,27 @@
-// app/inference/audio/automatic-speech-recognition/page.jsx
-'use client'
+'use client';
 
 import React, { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Upload, Wand2, X, Loader2, StopCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { 
+  Music2, 
+  Upload, 
+  Wand2, 
+  Loader2, 
+  VolumeX,
+  Volume2,
+  Mic,
+  StopCircle 
+} from 'lucide-react';
 
-export default function AudioInferencePage() {
+const AudioClassificationPage = () => {
   const [file, setFile] = useState(null);
-  const [transcription, setTranscription] = useState('');
+  const [classifications, setClassifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const audioRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
@@ -33,33 +43,11 @@ export default function AudioInferencePage() {
         const audioBlob = new Blob(chunksRef.current, { type: 'audio/wav' });
         const audioFile = new File([audioBlob], 'recording.wav', { type: 'audio/wav' });
         setFile(audioFile);
-        stream.getTracks().forEach(track => track.stop());
-        
-        // Start transcription immediately
-        setIsLoading(true);
-        setError('');
-
-        const formData = new FormData();
-        formData.append('audio', audioFile);
-
-        try {
-          const response = await fetch('/api/audio/automatic-speech-recognition', {
-            method: 'POST',
-            body: formData,
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.error || 'Failed to process audio');
-          }
-
-          setTranscription(data.text || '');
-        } catch (err) {
-          setError(err.message);
-        } finally {
-          setIsLoading(false);
+        if (audioRef.current) {
+          URL.revokeObjectURL(audioRef.current.src);
         }
+        audioRef.current.src = URL.createObjectURL(audioFile);
+        stream.getTracks().forEach(track => track.stop());
       };
 
       mediaRecorder.start();
@@ -94,7 +82,12 @@ export default function AudioInferencePage() {
     if (selectedFile) {
       setFile(selectedFile);
       setError('');
-      setTranscription('');
+      setClassifications([]);
+      
+      if (audioRef.current) {
+        URL.revokeObjectURL(audioRef.current.src);
+      }
+      audioRef.current.src = URL.createObjectURL(selectedFile);
     }
   };
 
@@ -104,7 +97,12 @@ export default function AudioInferencePage() {
     if (droppedFile && droppedFile.type.startsWith('audio/')) {
       setFile(droppedFile);
       setError('');
-      setTranscription('');
+      setClassifications([]);
+      
+      if (audioRef.current) {
+        URL.revokeObjectURL(audioRef.current.src);
+      }
+      audioRef.current.src = URL.createObjectURL(droppedFile);
     } else {
       setError('Please upload an audio file');
     }
@@ -123,7 +121,7 @@ export default function AudioInferencePage() {
     formData.append('audio', file);
 
     try {
-      const response = await fetch('/api/audio/automatic-speech-recognition', {
+      const response = await fetch('/api/audio/classification', {
         method: 'POST',
         body: formData,
       });
@@ -134,7 +132,7 @@ export default function AudioInferencePage() {
         throw new Error(data.error || 'Failed to process audio');
       }
 
-      setTranscription(data.text || '');
+      setClassifications(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -142,9 +140,18 @@ export default function AudioInferencePage() {
     }
   };
 
+  const togglePlay = () => {
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
   return (
     <div className="min-h-screen bg-[#0A0118] relative">
-      <div className="fixed inset-0">
+      <div className="fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-b from-violet-900/20 via-[#0A0118] to-[#0A0118]" />
         <motion.div
           className="absolute inset-0 opacity-30"
@@ -164,21 +171,21 @@ export default function AudioInferencePage() {
         />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 py-12">
+      <div className="relative max-w-7xl mx-auto px-4 py-12 z-10">
         <div className="flex items-center gap-6 pt-20 mb-12">
           <motion.div 
             className="w-16 h-16 bg-violet-600 rounded-2xl flex items-center justify-center
                      shadow-lg shadow-violet-500/20"
             whileHover={{ scale: 1.05 }}
           >
-            <Mic className="w-8 h-8 text-white" />
+            <Music2 className="w-8 h-8 text-white" />
           </motion.div>
           <div>
             <h1 className="text-5xl font-bold text-white mb-2">
-              Audio Transcription
+              Audio Classification
             </h1>
             <p className="text-gray-400">
-              Convert speech to text using Whisper AI
+              Analyze and classify audio content using AI
             </p>
           </div>
         </div>
@@ -189,7 +196,7 @@ export default function AudioInferencePage() {
             animate={{ opacity: 1, y: 0 }}
             className="relative p-6 rounded-xl bg-white/10 backdrop-blur-md border border-white/10"
           >
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/[0.03] to-transparent" />
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/[0.03] to-transparent -z-10" />
             
             {/* Recording section */}
             <div className="relative mb-8">
@@ -212,6 +219,32 @@ export default function AudioInferencePage() {
                     <>
                       <Mic className="w-5 h-5" />
                       Start Recording
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Audio preview section */}
+            <div className="relative mb-8">
+              <h3 className="text-xl font-bold text-white mb-4">Audio Preview</h3>
+              <div className="flex items-center justify-center gap-4">
+                <audio ref={audioRef} onEnded={() => setIsPlaying(false)} className="hidden" />
+                <button
+                  onClick={togglePlay}
+                  disabled={!file}
+                  className="px-6 py-3 rounded-lg flex items-center gap-2 bg-violet-600 hover:bg-violet-700 
+                           disabled:bg-violet-600/50 text-white transition-colors"
+                >
+                  {isPlaying ? (
+                    <>
+                      <VolumeX className="w-5 h-5" />
+                      Stop Playback
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="w-5 h-5" />
+                      Play Audio
                     </>
                   )}
                 </button>
@@ -260,7 +293,7 @@ export default function AudioInferencePage() {
               ) : (
                 <>
                   <Wand2 className="w-5 h-5" />
-                  Transcribe Audio
+                  Classify Audio
                 </>
               )}
             </button>
@@ -284,47 +317,31 @@ export default function AudioInferencePage() {
           >
             <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/[0.03] to-transparent" />
             
-            <h3 className="relative text-xl font-bold text-white mb-4">Transcription Result</h3>
+            <h3 className="relative text-xl font-bold text-white mb-4">Classification Results</h3>
             
             <div className="relative min-h-[300px] p-4 rounded-lg bg-black/30 border border-white/10">
-              {transcription ? (
-                <>
-                  <div className="flex gap-2 justify-end mb-4">
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(transcription);
-                        // Optional: Add toast notification here
-                      }}
-                      className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm transition-colors flex items-center gap-2"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
-                      </svg>
-                      Copy Text
-                    </button>
-                    <button
-                      onClick={() => {
-                        const blob = new Blob([transcription], { type: 'text/plain' });
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'transcription.txt';
-                        a.click();
-                        window.URL.revokeObjectURL(url);
-                      }}
-                      className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm transition-colors flex items-center gap-2"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                      </svg>
-                      Download
-                    </button>
-                  </div>
-                  <p className="text-gray-300 whitespace-pre-wrap">{transcription}</p>
-                </>
+              {classifications.length > 0 ? (
+                <div className="space-y-4">
+                  {classifications.map((result, index) => (
+                    <div key={index} className="relative">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-gray-300">{result.label}</span>
+                        <span className="text-gray-400">{(result.score * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="h-2 bg-black/50 rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${result.score * 100}%` }}
+                          transition={{ duration: 0.5, delay: index * 0.1 }}
+                          className="h-full bg-violet-500 rounded-full"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <p className="text-gray-500 italic">
-                  Transcribed text will appear here...
+                  Classification results will appear here...
                 </p>
               )}
             </div>
@@ -333,4 +350,6 @@ export default function AudioInferencePage() {
       </div>
     </div>
   );
-}
+};
+
+export default AudioClassificationPage;
